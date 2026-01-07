@@ -7,7 +7,7 @@ const NodeCache = require('node-cache');
 
 // Initialize Express app
 const app = express();
-const cache = new NodeCache({ stdTTL: 60 }); // Cache for 60 seconds
+const cache = new NodeCache({ stdTTL: 3360 }); // Cache for 60 seconds
 
 // Middleware
 app.use(bodyParser.json());
@@ -308,3 +308,4 @@ app.listen(port, () => {
 // app.listen(port, () => {
 //   console.log(`Server is running on port ${port}`);
 // });
+
