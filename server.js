@@ -1,103 +1,113 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 
+// === Config ===
+const PORT = 5000;
+const MONGODB_URI = 'mongodb+srv://ages27771:ages12345@cluster0.t2zpj0w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// const MONGODB_URI = 'mongodb+srv://service:services1234@cluster0.wxa147v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// const MONGODB_URI = 'mongodb+srv://service:services1234@cluster0.wxa147v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Replace <username>, <password>, and <cluster> with your actual MongoDB Atlas credentials
+
+// === App Setup ===
 const app = express();
-
-app.use(bodyParser.json());
 app.use(cors());
+app.use(express.json());
 
-// Use environment variable on Railway
-const dbURI = process.env.MONGO_URI;
+// === MongoDB Connection ===
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
-// MongoDB connection
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => {
-    console.error("MongoDB Connection Error:", err);
-    process.exit(1);
-  });
-
-// Schema
-const taskSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  phone: String,
-  altPhone: String,
-  state: String,
-  city: String,
-  pincode: String,
-  location: String,
-  landmark: String,
+// === Schemas ===
+const productSchema = new mongoose.Schema({
+  model: String,
   product: String,
-  selectedModel: Object,
-  serialNumber: String,
-  warrantyStatus: Object,
-  purchaseDate: String,
-  installationDate: String,
-  status: String,
-  complaintNumber: String,
-  callType: String,
-  additionalStatus: String,
-  callSource: String,
-  taskStatus: String,
-  assignEngineer: String,
-  contactNo: String,
-  dealer: String,
-  complaintNotes: String,
-  enginnerNotes: String,
-  customerFeedback: String,  // keep only once
-  date: String,
-  asp: String,
-  aspName: String,
-  actionTaken: String,
-  images: [String],
+  hsnCode: String,
+  quantity: Number,
+  price: Number,
+  igst: Number,
+  discount: Number,
+  totalAmount: Number
 });
 
-const Task = mongoose.model("Task", taskSchema);
+const courierSchema = new mongoose.Schema({
+  dispatchLocation: String,
+  deleiveryNote: String,
+  dated: String,
+  docket: String,
+  buyer: String,
+  otherRef: String,
+  refernceNO: String,
+  mode: String,
+  invoiceno: String,
+  currentdate: String,
+  courierName: String,
+  termsofdeleivery: String
+});
 
-// Routes
-app.post('/tasks', async (req, res) => {
+const invoiceSchema = new mongoose.Schema({
+  companyName: String,
+  personName: String,
+  gstuin: String,
+  address: String,
+  statename: String,
+  contactNumber: String,
+  companyFormation: String,
+  courier: courierSchema,
+  productDetails: [productSchema]
+});
+
+const Invoice = mongoose.model('Invoice', invoiceSchema);
+
+// === API Routes ===
+
+// GET all invoices
+app.get('/api/Chalan', async (req, res) => {
   try {
-    const task = new Task(req.body);
-    await task.save();
-    res.status(201).json(task);
+    const invoices = await Invoice.find();
+    res.json(invoices);
   } catch (err) {
-    res.status(500).json({ error: "Failed to save task" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/tasks', async (req, res) => {
+// POST a new invoice
+app.post('/api/Chalan', async (req, res) => {
   try {
-    const tasks = await Task.find();
-    res.status(200).json(tasks);
+    const invoice = new Invoice(req.body);
+    const savedInvoice = await invoice.save();
+    res.status(201).json(savedInvoice);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch tasks" });
+    res.status(400).json({ error: err.message });
   }
 });
 
-app.put('/tasks/:id', async (req, res) => {
+// PUT update invoice by ID
+app.put('/api/Chalan/:id', async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    res.json(task);
+    const updated = await Invoice.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: "Failed to update task" });
+    res.status(400).json({ error: err.message });
   }
 });
 
-app.delete('/tasks/:id', async (req, res) => {
+// DELETE invoice by ID
+app.delete('/api/Chalan/:id', async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    res.json({ message: "Task deleted" });
+    await Invoice.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Invoice deleted' });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete task" });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// Start server
-const port = process.env.PORT || 5002;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// === Start Server ===
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
